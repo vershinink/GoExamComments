@@ -33,4 +33,5 @@ type Comment struct {
 type DB interface {
 	AddComment(ctx context.Context, com Comment) error
 	Comments(ctx context.Context, post string) ([]Comment, error)
+	Close() error
 }
