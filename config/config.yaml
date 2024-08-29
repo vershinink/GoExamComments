@@ -1,4 +1,4 @@
-storage_path: "mongodb://192.168.0.150:27017/" # адрес для подключения к MongoDB
+storage_path: "mongodb://192.168.0.102:27017/" # адрес для подключения к MongoDB
 storage_user: "admin" # пользователь для аутентификации в MongoDB
 storage_passwd: "COMMENTS_DB_PASSWD" # пароль для аутентификации в MongoDB
 http_server:
