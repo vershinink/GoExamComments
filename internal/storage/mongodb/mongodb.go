@@ -96,6 +96,7 @@ func (s *Storage) Close() error {
 	return s.db.Disconnect(context.Background())
 }
 
+// AddComment записывает переданный комментарий в БД.
 func (s *Storage) AddComment(ctx context.Context, com storage.Comment) error {
 	const operation = "storage.mongodb.AddComment"
 
@@ -115,9 +116,12 @@ func (s *Storage) AddComment(ctx context.Context, com storage.Comment) error {
 		{Key: "content", Value: com.Content},
 		{Key: "childs", Value: bson.A{}},
 	}
-
 	collection := s.db.Database(dbName).Collection(colName)
 
+	// Если поле комментария ParentID равно пустой строке, то комментарий
+	// не является ответом на другой комментарий, и должен быть добавлен
+	// как отдельный документ. В противном случае, он должен быть добавлен
+	// к родительскому комментарию в массив childs.
 	if com.ParentID == "" {
 		_, err := collection.InsertOne(ctx, bsn)
 		if err != nil {
@@ -151,6 +155,8 @@ func (s *Storage) AddComment(ctx context.Context, com storage.Comment) error {
 	return nil
 }
 
+// Comments возвращает все деревья комментариев по переданному ID поста,
+// отсортированные по дате создания.
 func (s *Storage) Comments(ctx context.Context, post string) ([]storage.Comment, error) {
 	const operation = "storage.mongodb.AddComment"
 
@@ -160,7 +166,6 @@ func (s *Storage) Comments(ctx context.Context, post string) ([]storage.Comment,
 
 	var comments []storage.Comment
 	collection := s.db.Database(dbName).Collection(colName)
-
 	opts := options.Find().SetSort(bson.D{{Key: "pubTime", Value: -1}})
 	filter := bson.D{{Key: "postId", Value: post}}
 

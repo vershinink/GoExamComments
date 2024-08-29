@@ -2,6 +2,7 @@
 package storage
 
 import (
+	"context"
 	"errors"
 	"time"
 )
@@ -30,4 +31,6 @@ type Comment struct {
 //
 //go:generate go run github.com/vektra/mockery/v2@v2.44.1 --name=DB
 type DB interface {
+	AddComment(ctx context.Context, com Comment) error
+	Comments(ctx context.Context, post string) ([]Comment, error)
 }
