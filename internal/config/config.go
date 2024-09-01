@@ -14,6 +14,7 @@ type Config struct {
 	StoragePath   string `yaml:"storage_path"`
 	StorageUser   string `yaml:"storage_user"`
 	StoragePasswd string `yaml:"storage_passwd"`
+	ContentLength int    `yaml:"content_length"`
 	HTTPServer    `yaml:"http_server"`
 }
 type HTTPServer struct {

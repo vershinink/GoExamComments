@@ -1,3 +1,4 @@
+// Пакет для работы с сервером и обработчиками API.
 package server
 
 import (
@@ -34,8 +35,8 @@ func New(cfg *config.Config) *Server {
 }
 
 // Start запускает HTTP сервер в отдельной горутине.
-func (s *Server) Start(st storage.DB) {
-	s.API(st)
+func (s *Server) Start(cfg *config.Config, st storage.DB) {
+	s.API(cfg, st)
 
 	go func() {
 		if err := s.srv.ListenAndServe(); err != nil {
@@ -48,7 +49,9 @@ func (s *Server) Start(st storage.DB) {
 }
 
 // API инициализирует все обработчики API.
-func (s *Server) API(st storage.DB) {
+func (s *Server) API(cfg *config.Config, st storage.DB) {
+	s.mux.HandleFunc("POST /comments/new", AddComment(cfg.ContentLength, st))
+	s.mux.HandleFunc("GET /comments/{id}", Comments(st))
 }
 
 // Shutdown останавливает сервер используя graceful shutdown.
