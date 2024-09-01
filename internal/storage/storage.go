@@ -9,11 +9,13 @@ import (
 
 // Ошибки при работе с БД.
 var (
-	ErrNoComments        = errors.New("no comments on provided post id")
-	ErrNotAdded          = errors.New("comment was not added")
-	ErrIncorrectParentID = errors.New("incorrect parent id")
-	ErrIncorrectPostID   = errors.New("incorrect post id")
-	ErrEmptyContent      = errors.New("empty comment content field")
+	ErrNoComments         = errors.New("no comments on provided post id")
+	ErrNotAdded           = errors.New("comment was not added")
+	ErrNotFound           = errors.New("comment not found")
+	ErrIncorrectParentID  = errors.New("incorrect parent id")
+	ErrIncorrectPostID    = errors.New("incorrect post id")
+	ErrIncorrectCommentID = errors.New("incorrect comment id")
+	ErrEmptyContent       = errors.New("empty comment content field")
 )
 
 // Comment - структура комментария к посту.
@@ -31,7 +33,8 @@ type Comment struct {
 //
 //go:generate go run github.com/vektra/mockery/v2@v2.44.1 --name=DB
 type DB interface {
-	AddComment(ctx context.Context, com Comment) error
+	AddComment(ctx context.Context, com Comment) (string, error)
 	Comments(ctx context.Context, post string) ([]Comment, error)
+	SetOffensive(ctx context.Context, id string) error
 	Close() error
 }

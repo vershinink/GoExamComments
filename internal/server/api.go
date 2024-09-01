@@ -1,6 +1,7 @@
 package server
 
 import (
+	"GoExamComments/internal/censor"
 	"GoExamComments/internal/storage"
 	"encoding/json"
 	"log/slog"
@@ -8,7 +9,7 @@ import (
 	"strings"
 )
 
-func AddComment(ln int, st storage.DB) http.HandlerFunc {
+func AddComment(ln int, st storage.DB, cnr *censor.Censor) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		const operation = "server.AddComment"
 
@@ -40,13 +41,19 @@ func AddComment(ln int, st storage.DB) http.HandlerFunc {
 		}
 
 		ctx := r.Context()
-		err = st.AddComment(ctx, comm)
+		id, err := st.AddComment(ctx, comm)
 		if err != nil {
 			slog.Error("cannot add comment to DB", slog.String("err", err.Error()), slog.String("op", operation))
 			http.Error(w, "cannot add the comment", http.StatusInternalServerError)
 			return
 		}
 
+		if cnr != nil {
+			go func() {
+				comm.ID = id
+				cnr.Push(comm)
+			}()
+		}
 		w.WriteHeader(http.StatusCreated)
 	}
 }

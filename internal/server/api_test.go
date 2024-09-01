@@ -89,12 +89,12 @@ func TestAddComment(t *testing.T) {
 			if tt.respErr == "" || tt.mockErr != nil {
 				stMock.
 					On("AddComment", mock.Anything, mock.AnythingOfType("storage.Comment")).
-					Return(tt.mockErr).
+					Return("comment_id", tt.mockErr).
 					Once()
 			}
 
 			mux := http.NewServeMux()
-			mux.HandleFunc("POST /comments/new", AddComment(tt.len, stMock))
+			mux.HandleFunc("POST /comments/new", AddComment(tt.len, stMock, nil))
 			srv := httptest.NewServer(mux)
 			defer srv.Close()
 

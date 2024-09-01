@@ -17,8 +17,8 @@ import (
 
 var path string = "mongodb://192.168.0.102:27017/"
 
-// addOne добавляет один комментарий в БД и возвращает его ObjectID.
-// Функция для использования в тестах.
+// addOne добавляет один комментарий в БД и возвращает его ObjectID
+// в виде строки. Функция для использования в тестах.
 func (s *Storage) addOne(com storage.Comment) (string, error) {
 	bsn := bson.D{
 		{Key: "_id", Value: primitive.NewObjectID()},
@@ -63,46 +63,42 @@ func TestStorage_AddComment_WithoutParents(t *testing.T) {
 
 	tests := []struct {
 		name    string
-		s       *Storage
 		comment storage.Comment
 		wantErr bool
 	}{
 		{
 			name:    "Comment_1_OK",
-			s:       st,
-			comment: storage.Comment{PostID: "news1", Content: "First comment on news 1"},
+			comment: storage.Comment{PostID: "news_test_1", Content: "First comment on news 1"},
 			wantErr: false,
 		},
 		{
 			name:    "Comment_2_OK",
-			s:       st,
-			comment: storage.Comment{PostID: "news1", Content: "Second comment on news 1"},
+			comment: storage.Comment{PostID: "news_test_1", Content: "Second comment on news 1"},
 			wantErr: false,
 		},
 		{
 			name:    "Comment_3_OK",
-			s:       st,
-			comment: storage.Comment{PostID: "news2", Content: "Comment on news 2"},
+			comment: storage.Comment{PostID: "news_test_2", Content: "Comment on news 2"},
 			wantErr: false,
 		},
 		{
 			name:    "Empty_Post_ID",
-			s:       st,
 			comment: storage.Comment{Content: "Empty Post ID"},
 			wantErr: true,
 		},
 		{
 			name:    "Empty_Content",
-			s:       st,
-			comment: storage.Comment{PostID: "news1"},
+			comment: storage.Comment{PostID: "news_test_1"},
 			wantErr: true,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if err := tt.s.AddComment(context.Background(), tt.comment); (err != nil) != tt.wantErr {
+			id, err := st.AddComment(context.Background(), tt.comment)
+			if (err != nil) != tt.wantErr {
 				t.Errorf("Storage.AddComment() error = %v, wantErr %v", err, tt.wantErr)
 			}
+			t.Logf("inserted id = %s", id)
 		})
 	}
 }
@@ -117,48 +113,44 @@ func TestStorage_AddComment_Parents(t *testing.T) {
 	}
 	defer st.Close()
 
-	parent, err := st.addOne(storage.Comment{PostID: "news1", Content: "Comment with childs"})
+	parent, err := st.addOne(storage.Comment{PostID: "news_test_3", Content: "Comment with childs"})
 	if err != nil {
 		t.Fatalf("addOne error = %v", err)
 	}
-	t.Log(parent)
 
 	tests := []struct {
 		name    string
-		s       *Storage
 		comment storage.Comment
 		wantErr bool
 	}{
 		{
 			name:    "Child_Comment_1_OK",
-			s:       st,
-			comment: storage.Comment{ParentID: parent, PostID: "news1", Content: "First child comment"},
+			comment: storage.Comment{ParentID: parent, PostID: "news_test_3", Content: "First child comment"},
 			wantErr: false,
 		},
 		{
 			name:    "Child_Comment_2_OK",
-			s:       st,
-			comment: storage.Comment{ParentID: parent, PostID: "news1", Content: "Second child comment"},
+			comment: storage.Comment{ParentID: parent, PostID: "news_test_3", Content: "Second child comment"},
 			wantErr: false,
 		},
 		{
 			name:    "Incorrect_Parent_ID",
-			s:       st,
-			comment: storage.Comment{ParentID: "asdf", PostID: "news1", Content: "Incorrect Parent ID"},
+			comment: storage.Comment{ParentID: "asdf", PostID: "news_test_3", Content: "Incorrect Parent ID"},
 			wantErr: true,
 		},
 		{
 			name:    "Incorrect_Post_ID",
-			s:       st,
 			comment: storage.Comment{ParentID: parent, PostID: "asdf", Content: "Second child comment"},
 			wantErr: true,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if err := tt.s.AddComment(context.Background(), tt.comment); (err != nil) != tt.wantErr {
+			id, err := st.AddComment(context.Background(), tt.comment)
+			if (err != nil) != tt.wantErr {
 				t.Errorf("Storage.AddComment() error = %v, wantErr %v", err, tt.wantErr)
 			}
+			t.Logf("inserted id = %s", id)
 		})
 	}
 }
@@ -184,28 +176,24 @@ func TestStorage_Comments(t *testing.T) {
 
 	tests := []struct {
 		name    string
-		s       *Storage
 		post    string
 		want    int
 		wantErr bool
 	}{
 		{
 			name:    "Comments_OK",
-			s:       st,
 			post:    id,
 			want:    count,
 			wantErr: false,
 		},
 		{
 			name:    "Empty_Post_ID",
-			s:       st,
 			post:    "",
 			want:    0,
 			wantErr: true,
 		},
 		{
 			name:    "Incorrect_Post_ID",
-			s:       st,
 			post:    "asdf",
 			want:    0,
 			wantErr: true,
@@ -213,7 +201,7 @@ func TestStorage_Comments(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := tt.s.Comments(context.Background(), tt.post)
+			got, err := st.Comments(context.Background(), tt.post)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Storage.Comments() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -221,6 +209,51 @@ func TestStorage_Comments(t *testing.T) {
 			if len(got) != tt.want {
 				t.Errorf("Storage.Comments() error = len %v, want %v", got, tt.want)
 				return
+			}
+		})
+	}
+}
+
+func TestStorage_SetOffensive(t *testing.T) {
+	dbName = "testDB"
+	colName = "testComments"
+
+	st, err := new(setTestOpts(path))
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+	defer st.Close()
+
+	parent, err := st.addOne(storage.Comment{PostID: "news_test_4", Content: "Offensive comment"})
+	if err != nil {
+		t.Fatalf("addOne error = %v", err)
+	}
+
+	tests := []struct {
+		name    string
+		id      string
+		wantErr bool
+	}{
+		{
+			name:    "Offensive_OK",
+			id:      parent,
+			wantErr: false,
+		},
+		{
+			name:    "Offensive_empty_id",
+			id:      "",
+			wantErr: true,
+		},
+		{
+			name:    "Offensive_not_found",
+			id:      "1234567890",
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if err := st.SetOffensive(context.Background(), tt.id); (err != nil) != tt.wantErr {
+				t.Errorf("Storage.SetOffensive() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
 	}

@@ -15,21 +15,31 @@ type DB struct {
 }
 
 // AddComment provides a mock function with given fields: ctx, com
-func (_m *DB) AddComment(ctx context.Context, com storage.Comment) error {
+func (_m *DB) AddComment(ctx context.Context, com storage.Comment) (string, error) {
 	ret := _m.Called(ctx, com)
 
 	if len(ret) == 0 {
 		panic("no return value specified for AddComment")
 	}
 
-	var r0 error
-	if rf, ok := ret.Get(0).(func(context.Context, storage.Comment) error); ok {
+	var r0 string
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, storage.Comment) (string, error)); ok {
+		return rf(ctx, com)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, storage.Comment) string); ok {
 		r0 = rf(ctx, com)
 	} else {
-		r0 = ret.Error(0)
+		r0 = ret.Get(0).(string)
 	}
 
-	return r0
+	if rf, ok := ret.Get(1).(func(context.Context, storage.Comment) error); ok {
+		r1 = rf(ctx, com)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
 }
 
 // Close provides a mock function with given fields:
@@ -78,6 +88,24 @@ func (_m *DB) Comments(ctx context.Context, post string) ([]storage.Comment, err
 	}
 
 	return r0, r1
+}
+
+// SetOffensive provides a mock function with given fields: ctx, id
+func (_m *DB) SetOffensive(ctx context.Context, id string) error {
+	ret := _m.Called(ctx, id)
+
+	if len(ret) == 0 {
+		panic("no return value specified for SetOffensive")
+	}
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context, string) error); ok {
+		r0 = rf(ctx, id)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
 }
 
 // NewDB creates a new instance of DB. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.

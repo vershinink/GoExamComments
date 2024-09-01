@@ -2,6 +2,7 @@
 package server
 
 import (
+	"GoExamComments/internal/censor"
 	"GoExamComments/internal/config"
 	"GoExamComments/internal/storage"
 	"context"
@@ -35,8 +36,8 @@ func New(cfg *config.Config) *Server {
 }
 
 // Start запускает HTTP сервер в отдельной горутине.
-func (s *Server) Start(cfg *config.Config, st storage.DB) {
-	s.API(cfg, st)
+func (s *Server) Start(cfg *config.Config, st storage.DB, cnr *censor.Censor) {
+	s.API(cfg, st, cnr)
 
 	go func() {
 		if err := s.srv.ListenAndServe(); err != nil {
@@ -49,8 +50,8 @@ func (s *Server) Start(cfg *config.Config, st storage.DB) {
 }
 
 // API инициализирует все обработчики API.
-func (s *Server) API(cfg *config.Config, st storage.DB) {
-	s.mux.HandleFunc("POST /comments/new", AddComment(cfg.ContentLength, st))
+func (s *Server) API(cfg *config.Config, st storage.DB, cnr *censor.Censor) {
+	s.mux.HandleFunc("POST /comments/new", AddComment(cfg.ContentLength, st, cnr))
 	s.mux.HandleFunc("GET /comments/{id}", Comments(st))
 }
 

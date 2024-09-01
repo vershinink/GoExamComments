@@ -97,18 +97,19 @@ func (s *Storage) Close() error {
 }
 
 // AddComment записывает переданный комментарий в БД.
-func (s *Storage) AddComment(ctx context.Context, com storage.Comment) error {
+func (s *Storage) AddComment(ctx context.Context, com storage.Comment) (string, error) {
 	const operation = "storage.mongodb.AddComment"
 
 	if com.PostID == "" {
-		return fmt.Errorf("%s: %w", operation, storage.ErrIncorrectPostID)
+		return "", fmt.Errorf("%s: %w", operation, storage.ErrIncorrectPostID)
 	}
 	if com.Content == "" {
-		return fmt.Errorf("%s: %w", operation, storage.ErrEmptyContent)
+		return "", fmt.Errorf("%s: %w", operation, storage.ErrEmptyContent)
 	}
 
+	id := primitive.NewObjectID()
 	bsn := bson.D{
-		{Key: "_id", Value: primitive.NewObjectID()},
+		{Key: "_id", Value: id},
 		{Key: "parentId", Value: com.ParentID},
 		{Key: "postId", Value: com.PostID},
 		{Key: "pubTime", Value: primitive.NewDateTimeFromTime(time.Now())},
@@ -125,14 +126,15 @@ func (s *Storage) AddComment(ctx context.Context, com storage.Comment) error {
 	if com.ParentID == "" {
 		_, err := collection.InsertOne(ctx, bsn)
 		if err != nil {
-			return fmt.Errorf("%s: %w", operation, err)
+			return "", fmt.Errorf("%s: %w", operation, err)
 		}
-		return nil
+		//id := res.InsertedID.(primitive.ObjectID)
+		return id.Hex(), nil
 	}
 
 	parent, err := primitive.ObjectIDFromHex(com.ParentID)
 	if err != nil {
-		return fmt.Errorf("%s: %w", operation, storage.ErrIncorrectParentID)
+		return "", fmt.Errorf("%s: %w", operation, storage.ErrIncorrectParentID)
 	}
 
 	opts := options.Update().SetUpsert(false)
@@ -147,12 +149,12 @@ func (s *Storage) AddComment(ctx context.Context, com storage.Comment) error {
 	}
 	result, err := collection.UpdateOne(ctx, filter, update, opts)
 	if err != nil {
-		return fmt.Errorf("%s: %w", operation, err)
+		return "", fmt.Errorf("%s: %w", operation, err)
 	}
 	if result.MatchedCount == 0 {
-		return fmt.Errorf("%s: %w", operation, storage.ErrNotAdded)
+		return "", fmt.Errorf("%s: %w", operation, storage.ErrNotAdded)
 	}
-	return nil
+	return id.Hex(), nil
 }
 
 // Comments возвращает все деревья комментариев по переданному ID поста,
@@ -183,4 +185,36 @@ func (s *Storage) Comments(ctx context.Context, post string) ([]storage.Comment,
 		return nil, storage.ErrNoComments
 	}
 	return comments, nil
+}
+
+func (s *Storage) SetOffensive(ctx context.Context, id string) error {
+	const operation = "storage.mongodb.SetOffensive"
+
+	if id == "" {
+		return storage.ErrIncorrectCommentID
+	}
+
+	objId, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		return fmt.Errorf("%s: %w", operation, storage.ErrIncorrectCommentID)
+	}
+
+	collection := s.db.Database(dbName).Collection(colName)
+	opts := options.Update().SetUpsert(false)
+	filter := bson.D{
+		{Key: "_id", Value: objId},
+	}
+	update := bson.D{
+		{Key: "$set", Value: bson.D{
+			{Key: "allowed", Value: false},
+		}},
+	}
+	result, err := collection.UpdateOne(ctx, filter, update, opts)
+	if err != nil {
+		return fmt.Errorf("%s: %w", operation, err)
+	}
+	if result.MatchedCount == 0 {
+		return fmt.Errorf("%s: %w", operation, storage.ErrNotFound)
+	}
+	return nil
 }
