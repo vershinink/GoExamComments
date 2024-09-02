@@ -51,7 +51,7 @@ func MustLoad() *Config {
 
 	cfg.StoragePasswd = os.Getenv("COMMENTS_DB_PASSWD")
 	if cfg.StoragePasswd == "" {
-		log.Printf("COMMENTS_CONFIG_PATH is not set\n")
+		log.Printf("COMMENTS_DB_PASSWD is not set\n")
 	}
 
 	return &cfg
