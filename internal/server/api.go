@@ -2,6 +2,7 @@ package server
 
 import (
 	"GoExamComments/internal/censor"
+	"GoExamComments/internal/middleware"
 	"GoExamComments/internal/storage"
 	"encoding/json"
 	"log/slog"
@@ -9,11 +10,19 @@ import (
 	"strings"
 )
 
+// AddComment записывает переданный в запросе комментарий в БД. В заголовках
+// должен быть "Content-Type" со значением "application/json" в начале. Размер
+// тела запроса ограничен 1 Мбайтом. Размер комментария не более 1000 символов.
 func AddComment(ln int, st storage.DB, cnr *censor.Censor) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		const operation = "server.AddComment"
 
-		slog.Info("new request to add comment")
+		log := slog.Default().With(
+			slog.String("op", operation),
+			slog.String("request_id", middleware.GetReqID(r.Context())),
+		)
+
+		log.Info("request to add comment")
 
 		ct := r.Header.Get("Content-Type")
 		media := strings.ToLower(strings.TrimSpace(strings.Split(ct, ";")[0]))
@@ -32,7 +41,7 @@ func AddComment(ln int, st storage.DB, cnr *censor.Censor) http.HandlerFunc {
 			http.Error(w, "cannot decode request", http.StatusBadRequest)
 			return
 		}
-		slog.Debug("request body decoded")
+		log.Debug("request body decoded")
 
 		if len([]rune(comm.Content)) > ln {
 			slog.Error("comment content field has more than 1000 characters", slog.String("op", operation))
@@ -47,6 +56,7 @@ func AddComment(ln int, st storage.DB, cnr *censor.Censor) http.HandlerFunc {
 			http.Error(w, "cannot add the comment", http.StatusInternalServerError)
 			return
 		}
+		log.Debug("comment added to DB successfully")
 
 		if cnr != nil {
 			go func() {
@@ -55,14 +65,23 @@ func AddComment(ln int, st storage.DB, cnr *censor.Censor) http.HandlerFunc {
 			}()
 		}
 		w.WriteHeader(http.StatusCreated)
+		log.Info("request served successfuly")
+		log = nil
 	}
 }
 
+// Comments записывает в ResponseWriter полное дерево комментариев по
+// принятому ID поста.
 func Comments(st storage.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		const operation = "server.Comments"
 
-		slog.Info("new request to receive comments")
+		log := slog.Default().With(
+			slog.String("op", operation),
+			slog.String("request_id", middleware.GetReqID(r.Context())),
+		)
+
+		log.Info("request to receive comments")
 
 		id := r.PathValue("id")
 		if id == "" {
@@ -78,6 +97,7 @@ func Comments(st storage.DB) http.HandlerFunc {
 			http.Error(w, "cannot receive comments", http.StatusInternalServerError)
 			return
 		}
+		log.Debug("comments received successfully")
 
 		w.Header().Set("Access-Control-Allow-Origin", "*")
 		enc := json.NewEncoder(w)
@@ -89,5 +109,7 @@ func Comments(st storage.DB) http.HandlerFunc {
 			return
 		}
 		w.Header().Set("Content-Type", "application/json")
+		log.Info("request served successfuly")
+		log = nil
 	}
 }

@@ -49,9 +49,9 @@ func MustLoad() *Config {
 		log.Fatalf("cannot decode config file: %s, %s", configPath, err)
 	}
 
-	cfg.StoragePasswd = os.Getenv("COMMENTS_DB_PASSWD")
+	cfg.StoragePasswd = os.Getenv("MONGO_DB_PASSWD")
 	if cfg.StoragePasswd == "" {
-		log.Printf("COMMENTS_DB_PASSWD is not set\n")
+		log.Printf("MONGO_DB_PASSWD is not set\n")
 	}
 
 	return &cfg

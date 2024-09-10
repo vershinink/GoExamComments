@@ -33,8 +33,7 @@ type Storage struct {
 
 // New - обертка для конструктора пула подключений new.
 func New(cfg *config.Config) *Storage {
-	//opts := setOpts(cfg.StoragePath, cfg.StorageUser, cfg.StoragePasswd)
-	opts := setTestOpts(cfg.StoragePath)
+	opts := setOpts(cfg.StoragePath, cfg.StorageUser, cfg.StoragePasswd)
 	storage, err := new(opts)
 	if err != nil {
 		log.Fatalf("failed to init storage: %s", err.Error())
@@ -45,21 +44,21 @@ func New(cfg *config.Config) *Storage {
 // setOpts настраивает опции нового подключения к БД.
 // Функция вынесена отдельно для подмены ее в пакете
 // с тестами.
-// func setOpts(path, user, password string) *options.ClientOptions {
-// 	credential := options.Credential{
-// 		AuthMechanism: "SCRAM-SHA-256",
-// 		AuthSource:    "admin",
-// 		Username:      user,
-// 		Password:      password,
-// 	}
-// 	opts := options.Client().ApplyURI(path).SetAuth(credential)
-// 	return opts
-// }
+func setOpts(path, user, password string) *options.ClientOptions {
+	credential := options.Credential{
+		AuthMechanism: "SCRAM-SHA-256",
+		AuthSource:    "admin",
+		Username:      user,
+		Password:      password,
+	}
+	opts := options.Client().ApplyURI(path).SetAuth(credential)
+	return opts
+}
 
 // setTestOpts возвращает опции нового подключения без авторизации.
-func setTestOpts(path string) *options.ClientOptions {
-	return options.Client().ApplyURI(path)
-}
+// func setTestOpts(path string) *options.ClientOptions {
+// 	return options.Client().ApplyURI(path)
+// }
 
 // new - конструктор пула подключений к БД.
 func new(opts *options.ClientOptions) (*Storage, error) {
@@ -187,6 +186,8 @@ func (s *Storage) Comments(ctx context.Context, post string) ([]storage.Comment,
 	return comments, nil
 }
 
+// SetOffensive устанавливает флаг allowed в значение false у поста
+// по переданному ID.
 func (s *Storage) SetOffensive(ctx context.Context, id string) error {
 	const operation = "storage.mongodb.SetOffensive"
 

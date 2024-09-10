@@ -1,7 +1,7 @@
 # MongoDB
 storage_path: "mongodb://192.168.0.102:27017/" # адрес для подключения к MongoDB
 storage_user: "admin" # пользователь для аутентификации в MongoDB
-storage_passwd: "COMMENTS_DB_PASSWD" # пароль для аутентификации в MongoDB
+storage_passwd: "MONGO_DB_PASSWD" # пароль для аутентификации в MongoDB
 # Comment settings
 content_length: 1000
 censor_list:
@@ -10,7 +10,7 @@ censor_list:
   - "zxvbnm"
 # Server
 http_server:
-  address: "localhost:80"
+  address: "0.0.0.0:10502"
   read_timeout: 5s
   write_timeout: 10s
   idle_timeout: 60s

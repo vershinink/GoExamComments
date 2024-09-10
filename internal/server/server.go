@@ -4,6 +4,7 @@ package server
 import (
 	"GoExamComments/internal/censor"
 	"GoExamComments/internal/config"
+	"GoExamComments/internal/middleware"
 	"GoExamComments/internal/storage"
 	"context"
 	"errors"
@@ -36,9 +37,7 @@ func New(cfg *config.Config) *Server {
 }
 
 // Start запускает HTTP сервер в отдельной горутине.
-func (s *Server) Start(cfg *config.Config, st storage.DB, cnr *censor.Censor) {
-	s.API(cfg, st, cnr)
-
+func (s *Server) Start() {
 	go func() {
 		if err := s.srv.ListenAndServe(); err != nil {
 			if errors.Is(err, http.ErrServerClosed) {
@@ -47,6 +46,12 @@ func (s *Server) Start(cfg *config.Config, st storage.DB, cnr *censor.Censor) {
 			slog.Error("failed to start server")
 		}
 	}()
+}
+
+// Middleware инициализирует все обработчики middleware.
+func (s *Server) Middleware() {
+	wrappedMux := middleware.RequestID(middleware.Logger(s.mux))
+	s.srv.Handler = wrappedMux
 }
 
 // API инициализирует все обработчики API.

@@ -7,6 +7,7 @@ import (
 	"context"
 	"fmt"
 	"math/rand"
+	"os"
 	"strconv"
 	"testing"
 	"time"
@@ -41,9 +42,9 @@ func (s *Storage) addOne(com storage.Comment) (string, error) {
 func Test_new(t *testing.T) {
 
 	// Для тестирования авторизации.
-	// opts := setOpts(path, "admin", os.Getenv("DB_PASSWD"))
+	opts := setOpts(path, "admin", os.Getenv("MONGO_DB_PASSWD"))
 
-	opts := setTestOpts(path)
+	// opts := setTestOpts(path)
 	st, err := new(opts)
 	if err != nil {
 		t.Fatal(err.Error())
@@ -55,7 +56,8 @@ func TestStorage_AddComment_WithoutParents(t *testing.T) {
 	dbName = "testDB"
 	colName = "testComments"
 
-	st, err := new(setTestOpts(path))
+	opts := setOpts(path, "admin", os.Getenv("MONGO_DB_PASSWD"))
+	st, err := new(opts)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -107,7 +109,8 @@ func TestStorage_AddComment_Parents(t *testing.T) {
 	dbName = "testDB"
 	colName = "testComments"
 
-	st, err := new(setTestOpts(path))
+	opts := setOpts(path, "admin", os.Getenv("MONGO_DB_PASSWD"))
+	st, err := new(opts)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -159,7 +162,8 @@ func TestStorage_Comments(t *testing.T) {
 	dbName = "testDB"
 	colName = "testComments"
 
-	st, err := new(setTestOpts(path))
+	opts := setOpts(path, "admin", os.Getenv("MONGO_DB_PASSWD"))
+	st, err := new(opts)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -218,7 +222,8 @@ func TestStorage_SetOffensive(t *testing.T) {
 	dbName = "testDB"
 	colName = "testComments"
 
-	st, err := new(setTestOpts(path))
+	opts := setOpts(path, "admin", os.Getenv("MONGO_DB_PASSWD"))
+	st, err := new(opts)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
