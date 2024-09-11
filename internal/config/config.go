@@ -27,7 +27,7 @@ type HTTPServer struct {
 
 // MustLoad - инициализирует данные из конфиг файла. Путь к файлу берет из
 // переменной окружения COMMENTS_CONFIG_PATH, пароль для доступа к БД - из переменной
-// окружения COMMENTS_DB_PASSWD. Если не удается, то завершает приложение с ошибкой.
+// окружения MONGO_DB_PASSWD. Если не удается, то завершает приложение с ошибкой.
 func MustLoad() *Config {
 	configPath := os.Getenv("COMMENTS_CONFIG_PATH")
 	if configPath == "" {

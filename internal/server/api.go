@@ -2,6 +2,7 @@ package server
 
 import (
 	"GoExamComments/internal/censor"
+	"GoExamComments/internal/logger"
 	"GoExamComments/internal/middleware"
 	"GoExamComments/internal/storage"
 	"encoding/json"
@@ -27,7 +28,7 @@ func AddComment(ln int, st storage.DB, cnr *censor.Censor) http.HandlerFunc {
 		ct := r.Header.Get("Content-Type")
 		media := strings.ToLower(strings.TrimSpace(strings.Split(ct, ";")[0]))
 		if media != "application/json" {
-			slog.Error("content-Type header is not application/json", slog.String("op", operation))
+			log.Error("content-Type header is not application/json")
 			http.Error(w, "Content-Type header is not application/json", http.StatusUnsupportedMediaType)
 			return
 		}
@@ -37,14 +38,14 @@ func AddComment(ln int, st storage.DB, cnr *censor.Censor) http.HandlerFunc {
 		var comm storage.Comment
 		err := json.NewDecoder(r.Body).Decode(&comm)
 		if err != nil {
-			slog.Error("cannot decode request", slog.String("err", err.Error()), slog.String("op", operation))
+			log.Error("cannot decode request", logger.Err(err))
 			http.Error(w, "cannot decode request", http.StatusBadRequest)
 			return
 		}
 		log.Debug("request body decoded")
 
 		if len([]rune(comm.Content)) > ln {
-			slog.Error("comment content field has more than 1000 characters", slog.String("op", operation))
+			log.Error("comment content field has more than 1000 characters")
 			http.Error(w, "the length of the comment must not exceed 1000 characters", http.StatusBadRequest)
 			return
 		}
@@ -52,7 +53,7 @@ func AddComment(ln int, st storage.DB, cnr *censor.Censor) http.HandlerFunc {
 		ctx := r.Context()
 		id, err := st.AddComment(ctx, comm)
 		if err != nil {
-			slog.Error("cannot add comment to DB", slog.String("err", err.Error()), slog.String("op", operation))
+			log.Error("cannot add comment to DB", logger.Err(err))
 			http.Error(w, "cannot add the comment", http.StatusInternalServerError)
 			return
 		}
@@ -85,7 +86,7 @@ func Comments(st storage.DB) http.HandlerFunc {
 
 		id := r.PathValue("id")
 		if id == "" {
-			slog.Error("empty post id", slog.String("op", operation))
+			log.Error("empty post id")
 			http.Error(w, "empty post id", http.StatusBadRequest)
 			return
 		}
@@ -93,7 +94,7 @@ func Comments(st storage.DB) http.HandlerFunc {
 		ctx := r.Context()
 		comms, err := st.Comments(ctx, id)
 		if err != nil {
-			slog.Error("cannot receive comments", slog.String("err", err.Error()), slog.String("op", operation))
+			log.Error("cannot receive comments", logger.Err(err))
 			http.Error(w, "cannot receive comments", http.StatusInternalServerError)
 			return
 		}
@@ -104,7 +105,7 @@ func Comments(st storage.DB) http.HandlerFunc {
 		enc.SetIndent("", "\t")
 		err = enc.Encode(comms)
 		if err != nil {
-			slog.Error("cannot encode comments", slog.String("err", err.Error()), slog.String("op", operation))
+			log.Error("cannot encode comments", logger.Err(err))
 			http.Error(w, "cannot encode comments", http.StatusInternalServerError)
 			return
 		}

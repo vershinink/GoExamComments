@@ -22,11 +22,12 @@ const RequestIDHeader = "X-Request-Id"
 func RequestID(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		requestID := r.Header.Get(RequestIDHeader)
-		tm := time.Now()
-		sec := uint64(tm.Unix())
-		nano := uint64(tm.Nanosecond())
 
 		if requestID == "" {
+			tm := time.Now()
+			sec := uint64(tm.Unix())
+			nano := uint64(tm.Nanosecond())
+
 			s, _ := sqids.New(sqids.Options{MinLength: 10})
 			id, err := s.Encode([]uint64{sec, nano})
 			if err != nil {
