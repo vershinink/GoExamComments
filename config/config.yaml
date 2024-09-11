@@ -4,10 +4,6 @@ storage_user: "admin" # пользователь для аутентификац
 storage_passwd: "MONGO_DB_PASSWD" # пароль для аутентификации в MongoDB
 # Comment settings
 content_length: 1000
-censor_list:
-  - "qwerty"
-  - "йцукен"
-  - "zxvbnm"
 # Server
 http_server:
   address: "0.0.0.0:10502"

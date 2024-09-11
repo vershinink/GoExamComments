@@ -94,7 +94,7 @@ func TestAddComment(t *testing.T) {
 			}
 
 			mux := http.NewServeMux()
-			mux.HandleFunc("POST /comments/new", AddComment(tt.len, stMock, nil))
+			mux.HandleFunc("POST /comments/new", AddComment(tt.len, stMock))
 			srv := httptest.NewServer(mux)
 			defer srv.Close()
 

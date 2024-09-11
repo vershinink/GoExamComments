@@ -2,7 +2,6 @@
 package server
 
 import (
-	"GoExamComments/internal/censor"
 	"GoExamComments/internal/config"
 	"GoExamComments/internal/middleware"
 	"GoExamComments/internal/storage"
@@ -55,8 +54,8 @@ func (s *Server) Middleware() {
 }
 
 // API инициализирует все обработчики API.
-func (s *Server) API(cfg *config.Config, st storage.DB, cnr *censor.Censor) {
-	s.mux.HandleFunc("POST /comments/new", AddComment(cfg.ContentLength, st, cnr))
+func (s *Server) API(cfg *config.Config, st storage.DB) {
+	s.mux.HandleFunc("POST /comments/new", AddComment(cfg.ContentLength, st))
 	s.mux.HandleFunc("GET /comments/{id}", Comments(st))
 }
 

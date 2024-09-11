@@ -1,7 +1,6 @@
 package server
 
 import (
-	"GoExamComments/internal/censor"
 	"GoExamComments/internal/logger"
 	"GoExamComments/internal/middleware"
 	"GoExamComments/internal/storage"
@@ -14,7 +13,7 @@ import (
 // AddComment записывает переданный в запросе комментарий в БД. В заголовках
 // должен быть "Content-Type" со значением "application/json" в начале. Размер
 // тела запроса ограничен 1 Мбайтом. Размер комментария не более 1000 символов.
-func AddComment(ln int, st storage.DB, cnr *censor.Censor) http.HandlerFunc {
+func AddComment(ln int, st storage.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		const operation = "server.AddComment"
 
@@ -57,14 +56,8 @@ func AddComment(ln int, st storage.DB, cnr *censor.Censor) http.HandlerFunc {
 			http.Error(w, "cannot add the comment", http.StatusInternalServerError)
 			return
 		}
-		log.Debug("comment added to DB successfully")
+		log.Debug("comment added to DB successfully", slog.String("id", id))
 
-		if cnr != nil {
-			go func() {
-				comm.ID = id
-				cnr.Push(comm)
-			}()
-		}
 		w.WriteHeader(http.StatusCreated)
 		log.Info("request served successfuly")
 		log = nil

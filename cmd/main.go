@@ -1,7 +1,6 @@
 package main
 
 import (
-	"GoExamComments/internal/censor"
 	"GoExamComments/internal/config"
 	"GoExamComments/internal/logger"
 	"GoExamComments/internal/server"
@@ -22,14 +21,9 @@ func main() {
 	slog.Debug("storage initialized")
 	defer st.Close()
 
-	// Инициализируем цензор.
-	cnr := censor.New(cfg)
-	cnr.Start(st)
-	slog.Info("censor started")
-
 	// Инициализируем сервер, объявляем обработчики API и запускаем сервер.
 	srv := server.New(cfg)
-	srv.API(cfg, st, cnr)
+	srv.API(cfg, st)
 	srv.Middleware()
 	srv.Start()
 	slog.Info("Server started")
@@ -39,7 +33,6 @@ func main() {
 
 	// После сигнала прерывания останавливаем сервер, затем цензор.
 	srv.Shutdown()
-	cnr.Shutdown()
 
 	slog.Info("Server stopped")
 }
