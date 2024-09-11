@@ -4,6 +4,7 @@ import (
 	"GoExamComments/internal/logger"
 	"GoExamComments/internal/middleware"
 	"GoExamComments/internal/storage"
+	"GoExamComments/internal/tree"
 	"encoding/json"
 	"log/slog"
 	"net/http"
@@ -93,10 +94,17 @@ func Comments(st storage.DB) http.HandlerFunc {
 		}
 		log.Debug("comments received successfully")
 
+		root, err := tree.Build(comms)
+		if err != nil {
+			log.Error("cannot build comments tree", logger.Err(err))
+			http.Error(w, "cannot receive comments", http.StatusInternalServerError)
+			return
+		}
+
 		w.Header().Set("Access-Control-Allow-Origin", "*")
 		enc := json.NewEncoder(w)
 		enc.SetIndent("", "\t")
-		err = enc.Encode(comms)
+		err = enc.Encode(root.Comments)
 		if err != nil {
 			log.Error("cannot encode comments", logger.Err(err))
 			http.Error(w, "cannot encode comments", http.StatusInternalServerError)

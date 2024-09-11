@@ -24,9 +24,7 @@ type Comment struct {
 	ParentID string    `json:"parentId" bson:"parentId"`
 	PostID   string    `json:"postId" bson:"postId"`
 	PubTime  time.Time `json:"pubTime" bson:"pubTime"`
-	Allowed  bool      `json:"allowed" bson:"allowed"`
 	Content  string    `json:"content" bson:"content"`
-	Childs   []Comment `json:"childs" bson:"childs"`
 }
 
 // Interface - интерфейс хранилища комментариев к постам.
@@ -35,6 +33,5 @@ type Comment struct {
 type DB interface {
 	AddComment(ctx context.Context, com Comment) (string, error)
 	Comments(ctx context.Context, post string) ([]Comment, error)
-	SetOffensive(ctx context.Context, id string) error
 	Close() error
 }

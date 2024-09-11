@@ -52,7 +52,7 @@ func Test_new(t *testing.T) {
 	st.Close()
 }
 
-func TestStorage_AddComment_WithoutParents(t *testing.T) {
+func TestStorage_AddComment(t *testing.T) {
 	dbName = "testDB"
 	colName = "testComments"
 
@@ -62,6 +62,11 @@ func TestStorage_AddComment_WithoutParents(t *testing.T) {
 		t.Fatal(err.Error())
 	}
 	defer st.Close()
+
+	id, err := st.addOne(storage.Comment{PostID: "test_post", Content: "Test comment"})
+	if err != nil {
+		t.Fatalf("addOne error = %v", err)
+	}
 
 	tests := []struct {
 		name    string
@@ -84,6 +89,21 @@ func TestStorage_AddComment_WithoutParents(t *testing.T) {
 			wantErr: false,
 		},
 		{
+			name:    "Correct_Parent_ID",
+			comment: storage.Comment{ParentID: id, PostID: "test_post", Content: "Comment on test_post"},
+			wantErr: false,
+		},
+		{
+			name:    "Incorrect_Parent_ID",
+			comment: storage.Comment{ParentID: "asdfgh", PostID: "test_post", Content: "Comment on test_post"},
+			wantErr: true,
+		},
+		{
+			name:    "Parent_ID_Not_Found",
+			comment: storage.Comment{ParentID: "66e1a6b974aa2008e3b88e53", PostID: "test_post", Content: "Comment on test_post"},
+			wantErr: true,
+		},
+		{
 			name:    "Empty_Post_ID",
 			comment: storage.Comment{Content: "Empty Post ID"},
 			wantErr: true,
@@ -91,59 +111,6 @@ func TestStorage_AddComment_WithoutParents(t *testing.T) {
 		{
 			name:    "Empty_Content",
 			comment: storage.Comment{PostID: "news_test_1"},
-			wantErr: true,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			id, err := st.AddComment(context.Background(), tt.comment)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("Storage.AddComment() error = %v, wantErr %v", err, tt.wantErr)
-			}
-			t.Logf("inserted id = %s", id)
-		})
-	}
-}
-
-func TestStorage_AddComment_Parents(t *testing.T) {
-	dbName = "testDB"
-	colName = "testComments"
-
-	opts := setOpts(path, "admin", os.Getenv("MONGO_DB_PASSWD"))
-	st, err := new(opts)
-	if err != nil {
-		t.Fatal(err.Error())
-	}
-	defer st.Close()
-
-	parent, err := st.addOne(storage.Comment{PostID: "news_test_3", Content: "Comment with childs"})
-	if err != nil {
-		t.Fatalf("addOne error = %v", err)
-	}
-
-	tests := []struct {
-		name    string
-		comment storage.Comment
-		wantErr bool
-	}{
-		{
-			name:    "Child_Comment_1_OK",
-			comment: storage.Comment{ParentID: parent, PostID: "news_test_3", Content: "First child comment"},
-			wantErr: false,
-		},
-		{
-			name:    "Child_Comment_2_OK",
-			comment: storage.Comment{ParentID: parent, PostID: "news_test_3", Content: "Second child comment"},
-			wantErr: false,
-		},
-		{
-			name:    "Incorrect_Parent_ID",
-			comment: storage.Comment{ParentID: "asdf", PostID: "news_test_3", Content: "Incorrect Parent ID"},
-			wantErr: true,
-		},
-		{
-			name:    "Incorrect_Post_ID",
-			comment: storage.Comment{ParentID: parent, PostID: "asdf", Content: "Second child comment"},
 			wantErr: true,
 		},
 	}
@@ -213,52 +180,6 @@ func TestStorage_Comments(t *testing.T) {
 			if len(got) != tt.want {
 				t.Errorf("Storage.Comments() error = len %v, want %v", got, tt.want)
 				return
-			}
-		})
-	}
-}
-
-func TestStorage_SetOffensive(t *testing.T) {
-	dbName = "testDB"
-	colName = "testComments"
-
-	opts := setOpts(path, "admin", os.Getenv("MONGO_DB_PASSWD"))
-	st, err := new(opts)
-	if err != nil {
-		t.Fatal(err.Error())
-	}
-	defer st.Close()
-
-	parent, err := st.addOne(storage.Comment{PostID: "news_test_4", Content: "Offensive comment"})
-	if err != nil {
-		t.Fatalf("addOne error = %v", err)
-	}
-
-	tests := []struct {
-		name    string
-		id      string
-		wantErr bool
-	}{
-		{
-			name:    "Offensive_OK",
-			id:      parent,
-			wantErr: false,
-		},
-		{
-			name:    "Offensive_empty_id",
-			id:      "",
-			wantErr: true,
-		},
-		{
-			name:    "Offensive_not_found",
-			id:      "1234567890",
-			wantErr: true,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if err := st.SetOffensive(context.Background(), tt.id); (err != nil) != tt.wantErr {
-				t.Errorf("Storage.SetOffensive() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
 	}

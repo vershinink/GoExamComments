@@ -90,24 +90,6 @@ func (_m *DB) Comments(ctx context.Context, post string) ([]storage.Comment, err
 	return r0, r1
 }
 
-// SetOffensive provides a mock function with given fields: ctx, id
-func (_m *DB) SetOffensive(ctx context.Context, id string) error {
-	ret := _m.Called(ctx, id)
-
-	if len(ret) == 0 {
-		panic("no return value specified for SetOffensive")
-	}
-
-	var r0 error
-	if rf, ok := ret.Get(0).(func(context.Context, string) error); ok {
-		r0 = rf(ctx, id)
-	} else {
-		r0 = ret.Error(0)
-	}
-
-	return r0
-}
-
 // NewDB creates a new instance of DB. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.
 // The first argument is typically a *testing.T value.
 func NewDB(t interface {

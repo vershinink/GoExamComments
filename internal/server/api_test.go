@@ -5,6 +5,7 @@ import (
 	"GoExamComments/internal/logger"
 	"GoExamComments/internal/mocks"
 	"GoExamComments/internal/storage"
+	"GoExamComments/internal/tree"
 	"bytes"
 	"encoding/json"
 	"errors"
@@ -184,15 +185,16 @@ func TestComments(t *testing.T) {
 				t.Fatalf("Comments() error = %s, want %s", body, tt.respErr)
 			}
 
-			resp := []storage.Comment{}
+			//resp := []storage.Comment{}
+			resp := []*tree.Node{}
 			err := json.Unmarshal([]byte(body), &resp)
 			if err != nil {
 				t.Fatal("Comments() error = cannot unmarshal response")
 			}
 
 			// Проверим совпадение контента комментария.
-			if comm[0].Content != resp[0].Content {
-				t.Errorf("Comments() content = %v, want %v", resp[0].Content, comm[0].Content)
+			if comm[0].Content != resp[0].Comment.Content {
+				t.Errorf("Comments() content = %v, want %v", resp[0].Comment.Content, comm[0].Content)
 			}
 
 		})

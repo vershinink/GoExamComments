@@ -106,53 +106,36 @@ func (s *Storage) AddComment(ctx context.Context, com storage.Comment) (string, 
 		return "", fmt.Errorf("%s: %w", operation, storage.ErrEmptyContent)
 	}
 
+	collection := s.db.Database(dbName).Collection(colName)
+
+	// Проверим, что родительский комментарий существует, чтобы
+	// избежать вставки комментария с некорректной связью.
+	if com.ParentID != "" {
+		id, err := primitive.ObjectIDFromHex(com.ParentID)
+		if err != nil {
+			return "", fmt.Errorf("%s: %w", operation, err)
+		}
+		filter := bson.D{{Key: "_id", Value: id}}
+		res := collection.FindOne(ctx, filter)
+		if res.Err() != nil {
+			return "", fmt.Errorf("%s: %w", operation, res.Err())
+		}
+	}
+
 	id := primitive.NewObjectID()
 	bsn := bson.D{
 		{Key: "_id", Value: id},
 		{Key: "parentId", Value: com.ParentID},
 		{Key: "postId", Value: com.PostID},
 		{Key: "pubTime", Value: primitive.NewDateTimeFromTime(time.Now())},
-		{Key: "allowed", Value: true},
 		{Key: "content", Value: com.Content},
-		{Key: "childs", Value: bson.A{}},
-	}
-	collection := s.db.Database(dbName).Collection(colName)
-
-	// Если поле комментария ParentID равно пустой строке, то комментарий
-	// не является ответом на другой комментарий, и должен быть добавлен
-	// как отдельный документ. В противном случае, он должен быть добавлен
-	// к родительскому комментарию в массив childs.
-	if com.ParentID == "" {
-		_, err := collection.InsertOne(ctx, bsn)
-		if err != nil {
-			return "", fmt.Errorf("%s: %w", operation, err)
-		}
-		//id := res.InsertedID.(primitive.ObjectID)
-		return id.Hex(), nil
 	}
 
-	parent, err := primitive.ObjectIDFromHex(com.ParentID)
-	if err != nil {
-		return "", fmt.Errorf("%s: %w", operation, storage.ErrIncorrectParentID)
-	}
-
-	opts := options.Update().SetUpsert(false)
-	filter := bson.D{
-		{Key: "postId", Value: com.PostID},
-		{Key: "_id", Value: parent},
-	}
-	update := bson.D{
-		{Key: "$push", Value: bson.D{
-			{Key: "childs", Value: bsn},
-		}},
-	}
-	result, err := collection.UpdateOne(ctx, filter, update, opts)
+	_, err := collection.InsertOne(ctx, bsn)
 	if err != nil {
 		return "", fmt.Errorf("%s: %w", operation, err)
 	}
-	if result.MatchedCount == 0 {
-		return "", fmt.Errorf("%s: %w", operation, storage.ErrNotAdded)
-	}
+
 	return id.Hex(), nil
 }
 
@@ -184,38 +167,4 @@ func (s *Storage) Comments(ctx context.Context, post string) ([]storage.Comment,
 		return nil, storage.ErrNoComments
 	}
 	return comments, nil
-}
-
-// SetOffensive устанавливает флаг allowed в значение false у поста
-// по переданному ID.
-func (s *Storage) SetOffensive(ctx context.Context, id string) error {
-	const operation = "storage.mongodb.SetOffensive"
-
-	if id == "" {
-		return storage.ErrIncorrectCommentID
-	}
-
-	objId, err := primitive.ObjectIDFromHex(id)
-	if err != nil {
-		return fmt.Errorf("%s: %w", operation, storage.ErrIncorrectCommentID)
-	}
-
-	collection := s.db.Database(dbName).Collection(colName)
-	opts := options.Update().SetUpsert(false)
-	filter := bson.D{
-		{Key: "_id", Value: objId},
-	}
-	update := bson.D{
-		{Key: "$set", Value: bson.D{
-			{Key: "allowed", Value: false},
-		}},
-	}
-	result, err := collection.UpdateOne(ctx, filter, update, opts)
-	if err != nil {
-		return fmt.Errorf("%s: %w", operation, err)
-	}
-	if result.MatchedCount == 0 {
-		return fmt.Errorf("%s: %w", operation, storage.ErrNotFound)
-	}
-	return nil
 }
