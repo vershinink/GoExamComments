@@ -6,6 +6,7 @@ import (
 	"GoExamComments/internal/storage"
 	"GoExamComments/internal/tree"
 	"encoding/json"
+	"errors"
 	"log/slog"
 	"net/http"
 	"strings"
@@ -44,6 +45,11 @@ func AddComment(ln int, st storage.DB) http.HandlerFunc {
 		}
 		log.Debug("request body decoded")
 
+		if comm.Content == "" {
+			log.Error("comment has empty content field")
+			http.Error(w, "empty comment", http.StatusBadRequest)
+			return
+		}
 		if len([]rune(comm.Content)) > ln {
 			log.Error("comment content field has more than 1000 characters")
 			http.Error(w, "the length of the comment must not exceed 1000 characters", http.StatusBadRequest)
@@ -54,6 +60,10 @@ func AddComment(ln int, st storage.DB) http.HandlerFunc {
 		id, err := st.AddComment(ctx, comm)
 		if err != nil {
 			log.Error("cannot add comment to DB", logger.Err(err))
+			if errors.Is(err, storage.ErrIncorrectParentID) || errors.Is(err, storage.ErrIncorrectPostID) {
+				http.Error(w, "incorrect data", http.StatusBadRequest)
+				return
+			}
 			http.Error(w, "cannot add the comment", http.StatusInternalServerError)
 			return
 		}
@@ -89,6 +99,14 @@ func Comments(st storage.DB) http.HandlerFunc {
 		comms, err := st.Comments(ctx, id)
 		if err != nil {
 			log.Error("cannot receive comments", logger.Err(err))
+			if errors.Is(err, storage.ErrNoComments) {
+				http.Error(w, "post id not found", http.StatusBadRequest)
+				return
+			}
+			if errors.Is(err, storage.ErrIncorrectPostID) {
+				http.Error(w, "incorrect post id", http.StatusBadRequest)
+				return
+			}
 			http.Error(w, "cannot receive comments", http.StatusInternalServerError)
 			return
 		}

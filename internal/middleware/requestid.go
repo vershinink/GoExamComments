@@ -1,3 +1,4 @@
+// Пакет содержит обработчики middleware.
 package middleware
 
 import (

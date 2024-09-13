@@ -10,8 +10,7 @@ import (
 // Ошибки при работе с БД.
 var (
 	ErrNoComments         = errors.New("no comments on provided post id")
-	ErrNotAdded           = errors.New("comment was not added")
-	ErrNotFound           = errors.New("comment not found")
+	ErrParentNotFound     = errors.New("parent comment not found")
 	ErrIncorrectParentID  = errors.New("incorrect parent id")
 	ErrIncorrectPostID    = errors.New("incorrect post id")
 	ErrIncorrectCommentID = errors.New("incorrect comment id")

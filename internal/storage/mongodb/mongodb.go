@@ -19,7 +19,7 @@ import (
 // а не константы, так как в тестах им присваиваются другие
 // значения.
 var (
-	dbName  string = "goComments"
+	dbName  string = "goExam"
 	colName string = "comments"
 )
 
@@ -99,11 +99,8 @@ func (s *Storage) Close() error {
 func (s *Storage) AddComment(ctx context.Context, com storage.Comment) (string, error) {
 	const operation = "storage.mongodb.AddComment"
 
-	if com.PostID == "" {
+	if _, err := primitive.ObjectIDFromHex(com.PostID); err != nil {
 		return "", fmt.Errorf("%s: %w", operation, storage.ErrIncorrectPostID)
-	}
-	if com.Content == "" {
-		return "", fmt.Errorf("%s: %w", operation, storage.ErrEmptyContent)
 	}
 
 	collection := s.db.Database(dbName).Collection(colName)
@@ -113,11 +110,14 @@ func (s *Storage) AddComment(ctx context.Context, com storage.Comment) (string, 
 	if com.ParentID != "" {
 		id, err := primitive.ObjectIDFromHex(com.ParentID)
 		if err != nil {
-			return "", fmt.Errorf("%s: %w", operation, err)
+			return "", fmt.Errorf("%s: %w", operation, storage.ErrIncorrectParentID)
 		}
 		filter := bson.D{{Key: "_id", Value: id}}
 		res := collection.FindOne(ctx, filter)
 		if res.Err() != nil {
+			if res.Err() == mongo.ErrNoDocuments {
+				return "", fmt.Errorf("%s: %w", operation, storage.ErrParentNotFound)
+			}
 			return "", fmt.Errorf("%s: %w", operation, res.Err())
 		}
 	}
@@ -147,6 +147,9 @@ func (s *Storage) Comments(ctx context.Context, post string) ([]storage.Comment,
 	if post == "" {
 		return nil, storage.ErrIncorrectPostID
 	}
+	if _, err := primitive.ObjectIDFromHex(post); err != nil {
+		return nil, fmt.Errorf("%s: %w", operation, storage.ErrIncorrectPostID)
+	}
 
 	var comments []storage.Comment
 	collection := s.db.Database(dbName).Collection(colName)
@@ -164,7 +167,7 @@ func (s *Storage) Comments(ctx context.Context, post string) ([]storage.Comment,
 	}
 
 	if len(comments) == 0 {
-		return nil, storage.ErrNoComments
+		return nil, fmt.Errorf("%s: %w", operation, storage.ErrNoComments)
 	}
 	return comments, nil
 }
