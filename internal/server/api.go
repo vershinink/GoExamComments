@@ -100,7 +100,7 @@ func Comments(st storage.DB) http.HandlerFunc {
 		if err != nil {
 			log.Error("cannot receive comments", logger.Err(err))
 			if errors.Is(err, storage.ErrNoComments) {
-				http.Error(w, "post id not found", http.StatusBadRequest)
+				http.Error(w, "post id not found", http.StatusNotFound)
 				return
 			}
 			if errors.Is(err, storage.ErrIncorrectPostID) {
