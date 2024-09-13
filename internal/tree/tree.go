@@ -14,8 +14,8 @@ type Root struct {
 
 // Node - структура узла дерева комментариев.
 type Node struct {
-	Comment storage.Comment `json:"comment"`
-	Childs  []*Node         `json:"childs"`
+	storage.Comment
+	Childs []*Node `json:"childs"`
 }
 
 var (
