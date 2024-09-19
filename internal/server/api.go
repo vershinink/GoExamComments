@@ -71,7 +71,6 @@ func AddComment(ln int, st storage.DB) http.HandlerFunc {
 
 		w.WriteHeader(http.StatusCreated)
 		log.Info("request served successfuly")
-		log = nil
 	}
 }
 
@@ -87,6 +86,9 @@ func Comments(st storage.DB) http.HandlerFunc {
 		)
 
 		log.Info("request to receive comments")
+
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Content-Type", "application/json")
 
 		id := r.PathValue("id")
 		if id == "" {
@@ -119,7 +121,6 @@ func Comments(st storage.DB) http.HandlerFunc {
 			return
 		}
 
-		w.Header().Set("Access-Control-Allow-Origin", "*")
 		enc := json.NewEncoder(w)
 		enc.SetIndent("", "\t")
 		err = enc.Encode(root.Comments)
@@ -128,8 +129,7 @@ func Comments(st storage.DB) http.HandlerFunc {
 			http.Error(w, "cannot encode comments", http.StatusInternalServerError)
 			return
 		}
-		w.Header().Set("Content-Type", "application/json")
+
 		log.Info("request served successfuly")
-		log = nil
 	}
 }
